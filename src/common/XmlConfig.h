@@ -57,7 +57,7 @@ public:
      * Parse the configure file.
      * @throw HdfsBadConfigFoumat
      */
-    void update(const char * path);
+    void update(const char * path, bool clearPrevious = true);
 
     /**
      * Get a string with given configure key.

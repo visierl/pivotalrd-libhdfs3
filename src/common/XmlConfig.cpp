@@ -185,10 +185,12 @@ Config::Config(const char * p) :
     update(p);
 }
 
-void Config::update(const char * p) {
+  void Config::update(const char * p, bool clearPrevious) {
     xmlDocPtr doc; /* the resulting document tree */
     LIBXML_TEST_VERSION
-    kv.clear();
+    if (clearPrevious) {
+      kv.clear();
+    }
     path = p;
 
     if (access(path.c_str(), R_OK)) {

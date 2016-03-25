@@ -18,6 +18,9 @@ default_prefix=${source_dir}/dist
 # Choose the default dependency install prefix
 default_dependency=${DEPENDENCY_INSTALL_PREFIX}
 
+# The default Hadoop configuration directory is /etc/hadoop/conf
+default_hadoop_config_dir="/etc/hadoop/conf"
+
 if [ x"${default_dependency}" = x"" ]; then
     default_dependency="/opt/dependency"
 fi
@@ -33,6 +36,8 @@ Configuration:
                                     ['"${default_prefix}"']
     --dependency=DIRs               specify the dependencies at DIRs, separated by colon 
                                     ['"${default_dependency}"']
+    --hadoop-config-dir=<path>      set path to hadoop config, <path> is path to hadoop config dir
+                                    ['"${default_hadoop_config_dir}"']
     --enable-debug                  enable debug build
     --enable-boost                  force to enable boost
     --enable-coverage               enable build with code coverage support
@@ -63,6 +68,7 @@ Example:
 # Parse arguments
 prefix_dirs="${default_prefix}"
 dependency_dir="${default_dependency}"
+hadoop_config_dir="${default_hadoop_config_dir}"
 build_type="Release"
 enable_boost="OFF"
 enable_coverage="OFF"
@@ -73,6 +79,8 @@ while test $# != 0; do
                 prefix_dirs="$dir";;
     --dependency=*) dir=`arg "$1"`
                 dependency_dir="$dir";;
+    --hadoop-config-dir=*) dir=`arg "$1"`
+                hadoop_config_dir="$dir";;
     --enable-debug) enable_build="ON";;
     --enable-boost) enable_boost="ON";;
     --enable-coverage) enable_coverage="ON";;
@@ -116,7 +124,9 @@ fi
 ${cmake} -DENABLE_DEBUG=${enable_build} -DCMAKE_INSTALL_PREFIX=${prefix_dirs} \
     -DCMAKE_C_COMPILER=${c_compiler} -DCMAKE_CXX_COMPILER=${cxx_compiler} \
     -DCMAKE_PREFIX_PATH=${dependency_dir} -DENABLE_BOOST=${enable_boost} \
-    -DENABLE_COVERAGE=${enable_coverage} -DENABLE_LIBCPP=${enable_clang_lib} ${source_dir} \
+    -DENABLE_COVERAGE=${enable_coverage} -DENABLE_LIBCPP=${enable_clang_lib} \
+    -DHADOOP_CONFIG_DIR=${hadoop_config_dir} \
+    ${source_dir} \
     || die "failed to configure the project"
 
 echo 'bootstrap success. Run "make" to build.'

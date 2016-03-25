@@ -96,6 +96,14 @@ public:
         return defaultUri;
     }
 
+    const std::string & getDefaultFS() const {
+        return defaultFS;
+    }
+
+    const std::string & getDefaultName() const {
+        return defaultName;
+    }
+
     int32_t getDefaultReplica() const {
         return defaultReplica;
     }
@@ -327,6 +335,8 @@ public:
      * FileSystem configure
      */
     std::string defaultUri;
+    std::string defaultFS;
+    std::string defaultName;
     std::string kerberosCachePath;
     std::string logSeverity;
     int32_t defaultReplica;

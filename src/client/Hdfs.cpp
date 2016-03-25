@@ -55,6 +55,12 @@ extern "C" {
 #define ERROR_MESSAGE_BUFFER_SIZE 4096
 #endif
 
+#ifdef _MAX_PATH
+#define CONFIG_PATH_SEPARATOR '\\' // for Windows
+#else
+#define CONFIG_PATH_SEPARATOR '/'  // for non-Windows
+#endif
+
 static THREAD_LOCAL char ErrorMessage[ERROR_MESSAGE_BUFFER_SIZE] = "Success";
 
 static void SetLastException(Hdfs::exception_ptr e) {
@@ -204,7 +210,50 @@ public:
     }
 
 private:
+    const char *hadoopConfFiles(unsigned index) {
+        static const char *confFiles[] = {
+            "hadoop-site.xml",  // obsolete, but just in case
+            "core-site.xml",
+            "hdfs-site.xml",
+            "yarn-site.xml",
+            "mapred-site.xml",
+            "kms-site.xml",
+        };
+        if (index < (sizeof(confFiles) / sizeof(confFiles[0]))) {
+            return confFiles[index];
+        }
+        return NULL;
+    }
+
     void init(const std::string & confPath, bool reportError) {
+        // Read the system Hadoop config files first (if they exist).  This
+        // picks up the system config.
+        //
+        // The system Hadoop config prefix is fixed (it is HADOOP_CONFIG_DIR
+        // from the compile line). Set that up with a trailing separator, and
+        // then grab a pointer to the beginning of the filename (variable)
+        // part of the string.
+        char tmpPath[sizeof(HADOOP_CONFIG_DIR) + hadoopMaxConfFileNameLen];
+        char *tmpPathFileName = &tmpPath[sizeof(HADOOP_CONFIG_DIR)];
+        bool clearPrevious = true;
+        strcpy(tmpPath, HADOOP_CONFIG_DIR);
+        // Put in the path separator ('/' or whatever) before the filename.
+        tmpPath[sizeof(HADOOP_CONFIG_DIR) - 1] = CONFIG_PATH_SEPARATOR;
+        for (int i = 0; hadoopConfFiles(i); ++i) {
+            strncpy(tmpPathFileName, hadoopConfFiles(i),
+                    hadoopMaxConfFileNameLen);
+            tmpPathFileName[hadoopMaxConfFileNameLen] = '\0';
+            if (access(tmpPath, R_OK)) {
+                // This file was not found, this is not an error, it is just
+                // not there.
+                continue;
+            }
+            conf->update(tmpPath, clearPrevious);
+            clearPrevious = false;
+        }
+
+        // Now read the user supplied config file (if it exists).  This allows
+        // the user to override the system config on any given config item.
         if (access(confPath.c_str(), R_OK)) {
             if (reportError) {
                 LOG(Hdfs::Internal::LOG_ERROR,
@@ -214,11 +263,13 @@ private:
                 return;
             }
         }
-
-        conf->update(confPath.c_str());
+        conf->update(confPath.c_str(), clearPrevious);
     }
 private:
     shared_ptr<Config> conf;
+    // Generous maximum size of config file name (without dir prefix).
+    // Change if one of the above file names gets bigger than 64 chars.
+    static const size_t hadoopMaxConfFileNameLen = 64;
 };
 
 struct hdfsBuilder {
@@ -338,11 +389,11 @@ int hdfsFileIsOpenForWrite(hdfsFile file) {
     return !file->isInput() ? 1 : 0;
 }
 
-hdfsFS hdfsConnectAsUser(const char * host, tPort port, const char * user) {
+static hdfsFS hdfsConnectCommon(const char *host,
+                                tPort port,
+                                const char *user = NULL,
+                                bool newInstance = false) {
     hdfsFS retVal = NULL;
-    PARAMETER_ASSERT(host != NULL && strlen(host) > 0, NULL, EINVAL);
-    PARAMETER_ASSERT(port > 0, NULL, EINVAL);
-    PARAMETER_ASSERT(user != NULL && strlen(user) > 0, NULL, EINVAL);
     struct hdfsBuilder * bld = hdfsNewBuilder();
 
     if (!bld)
@@ -350,63 +401,38 @@ hdfsFS hdfsConnectAsUser(const char * host, tPort port, const char * user) {
 
     hdfsBuilderSetNameNode(bld, host);
     hdfsBuilderSetNameNodePort(bld, port);
-    hdfsBuilderSetUserName(bld, user);
+    if (newInstance) {
+        hdfsBuilderSetForceNewInstance(bld);
+    }
+    if (user) {
+        hdfsBuilderSetUserName(bld, user);
+    }
     retVal = hdfsBuilderConnect(bld);
     hdfsFreeBuilder(bld);
     return retVal;
 }
+    
+hdfsFS hdfsConnectAsUser(const char * host, tPort port, const char * user) {
+    PARAMETER_ASSERT(host != NULL && strlen(host) > 0, NULL, EINVAL);
+    PARAMETER_ASSERT(user != NULL && strlen(user) > 0, NULL, EINVAL);
+    return hdfsConnectCommon(host, port, user);
+}
 
 hdfsFS hdfsConnect(const char * host, tPort port) {
-    hdfsFS retVal = NULL;
     PARAMETER_ASSERT(host != NULL && strlen(host) > 0, NULL, EINVAL);
-    PARAMETER_ASSERT(port > 0, NULL, EINVAL);
-    struct hdfsBuilder * bld = hdfsNewBuilder();
-
-    if (!bld)
-        return NULL;
-
-    hdfsBuilderSetNameNode(bld, host);
-    hdfsBuilderSetNameNodePort(bld, port);
-    retVal = hdfsBuilderConnect(bld);
-    hdfsFreeBuilder(bld);
-    return retVal;
+    return hdfsConnectCommon(host, port);
 }
 
 hdfsFS hdfsConnectAsUserNewInstance(const char * host, tPort port,
                                     const char * user) {
-    hdfsFS retVal = NULL;
     PARAMETER_ASSERT(host != NULL && strlen(host) > 0, NULL, EINVAL);
-    PARAMETER_ASSERT(port > 0, NULL, EINVAL);
     PARAMETER_ASSERT(user != NULL && strlen(user) > 0, NULL, EINVAL);
-    struct hdfsBuilder * bld = hdfsNewBuilder();
-
-    if (!bld)
-        return NULL;
-
-    hdfsBuilderSetNameNode(bld, host);
-    hdfsBuilderSetNameNodePort(bld, port);
-    hdfsBuilderSetForceNewInstance(bld);
-    hdfsBuilderSetUserName(bld, user);
-    retVal = hdfsBuilderConnect(bld);
-    hdfsFreeBuilder(bld);
-    return retVal;
+    return hdfsConnectCommon(host, port, user, true);
 }
 
 hdfsFS hdfsConnectNewInstance(const char * host, tPort port) {
-    hdfsFS retVal = NULL;
     PARAMETER_ASSERT(host != NULL && strlen(host) > 0, NULL, EINVAL);
-    PARAMETER_ASSERT(port > 0, NULL, EINVAL);
-    struct hdfsBuilder * bld = hdfsNewBuilder();
-
-    if (!bld)
-        return NULL;
-
-    hdfsBuilderSetNameNode(bld, host);
-    hdfsBuilderSetNameNodePort(bld, port);
-    hdfsBuilderSetForceNewInstance(bld);
-    retVal = hdfsBuilderConnect(bld);
-    hdfsFreeBuilder(bld);
-    return retVal;
+    return hdfsConnectCommon(host, port, NULL, true);
 }
 
 hdfsFS hdfsBuilderConnect(struct hdfsBuilder * bld) {
@@ -419,7 +445,7 @@ hdfsFS hdfsBuilderConnect(struct hdfsBuilder * bld) {
     FileSystem * fs = NULL;
 
     if (0 == strcasecmp(bld->nn.c_str(), "default")) {
-        uri = conf.getDefaultUri();
+        uri = conf.getDefaultFS();
     } else {
         /*
          * handle scheme
