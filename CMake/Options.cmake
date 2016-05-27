@@ -4,6 +4,7 @@ OPTION(ENABLE_SSE "enable SSE4.2 buildin function" ON)
 OPTION(ENABLE_FRAME_POINTER "enable frame pointer on 64bit system with flag -fno-omit-frame-pointer, on 32bit system, it is always enabled" ON)
 OPTION(ENABLE_LIBCPP "using libc++ instead of libstdc++, only valid for clang compiler" OFF)
 OPTION(ENABLE_BOOST "using boost instead of native compiler c++0x support" OFF)
+OPTION(HADOOP_CONFIG_DIR "path to the Hadoop configuration files" "/etc/hadoop/config")
 
 INCLUDE (CheckFunctionExists)
 CHECK_FUNCTION_EXISTS(dladdr HAVE_DLADDR)
@@ -21,6 +22,9 @@ ENDIF(ENABLE_DEBUG STREQUAL ON)
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing")
+
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHADOOP_CONFIG_DIR='\"${HADOOP_CONFIG_DIR}\"'")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DHADOOP_CONFIG_DIR=\"${HADOOP_CONFIG_DIR}\"")
 
 IF(ENABLE_COVERAGE STREQUAL ON)
     INCLUDE(CodeCoverage)
