@@ -45,6 +45,7 @@ struct ConfigDefault {
     T * variable; //variable this configure item should be bound to.
     const char * key; //configure key.
     T value; //default value.
+    bool alias; // is an alias of another setting
     function<void(const char *, T const &)> check;   //the function to validate the value.
 };
 
@@ -93,7 +94,7 @@ public:
      * FileSystem configure
      */
     const std::string & getDefaultUri() const {
-        return defaultUri;
+        return defaultFS;
     }
 
     const std::string & getDefaultFS() const {
@@ -101,7 +102,7 @@ public:
     }
 
     const std::string & getDefaultName() const {
-        return defaultName;
+        return defaultFS;
     }
 
     int32_t getDefaultReplica() const {
@@ -334,9 +335,7 @@ public:
     /*
      * FileSystem configure
      */
-    std::string defaultUri;
     std::string defaultFS;
-    std::string defaultName;
     std::string kerberosCachePath;
     std::string logSeverity;
     int32_t defaultReplica;

@@ -34,6 +34,9 @@
 
 #define ARRAYSIZE(A) (sizeof(A) / sizeof(A[0]))
 
+#define ALIAS true
+#define ORIG false
+
 namespace Hdfs {
 namespace Internal {
 
@@ -58,100 +61,114 @@ static void CheckMultipleOf(const char * key, const T & value, int unit) {
 SessionConfig::SessionConfig(const Config & conf) {
     ConfigDefault<bool> boolValues [] = {
         {
-            &rpcTcpNoDelay, "rpc.client.connect.tcpnodelay", true
+            &rpcTcpNoDelay, "rpc.client.connect.tcpnodelay", true, ORIG
         }, {
-            &readFromLocal, "dfs.client.read.shortcircuit", true
+            &readFromLocal, "dfs.client.read.shortcircuit", true, ORIG
         }, {
-            &addDatanode, "output.replace-datanode-on-failure", true
+            &addDatanode, "output.replace-datanode-on-failure", true, ORIG
         }, {
-            &notRetryAnotherNode, "input.notretry-another-node", false
+            &notRetryAnotherNode, "input.notretry-another-node", false, ORIG
         }, {
-            &useMappedFile, "input.localread.mappedfile", false
+            &useMappedFile, "input.localread.mappedfile", false, ORIG
         }, {
-            &legacyLocalBlockReader, "dfs.client.use.legacy.blockreader.local", false
+            &legacyLocalBlockReader, "dfs.client.use.legacy.blockreader.local", false, ORIG
         }
     };
     ConfigDefault<int32_t> i32Values[] = {
         {
-            &rpcMaxIdleTime, "rpc.client.max.idle", 10 * 1000, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &rpcMaxIdleTime, "rpc.client.max.idle", 10 * 1000, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &rpcPingTimeout, "rpc.client.ping.interval", 10 * 1000
+            &rpcPingTimeout, "rpc.client.ping.interval", 10 * 1000, ORIG
         }, {
-            &rpcConnectTimeout, "rpc.client.connect.timeout", 600 * 1000
+            &rpcConnectTimeout, "rpc.client.connect.timeout", 600 * 1000, ORIG
         }, {
-            &rpcReadTimeout, "rpc.client.read.timeout", 3600 * 1000
+            &rpcReadTimeout, "rpc.client.read.timeout", 3600 * 1000, ORIG
         }, {
-            &rpcWriteTimeout, "rpc.client.write.timeout", 3600 * 1000
+            &rpcWriteTimeout, "rpc.client.write.timeout", 3600 * 1000, ORIG
         }, {
-            &rpcSocketLingerTimeout, "rpc.client.socekt.linger.timeout", -1
+            &rpcSocketLingerTimeout, "rpc.client.socekt.linger.timeout", -1, ORIG
         }, {
-            &rpcMaxRetryOnConnect, "rpc.client.connect.retry", 10, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &rpcMaxRetryOnConnect, "rpc.client.connect.retry", 10, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &rpcTimeout, "rpc.client.timeout", 3600 * 1000
+            &rpcTimeout, "rpc.client.timeout", 3600 * 1000, ORIG
         }, {
-            &defaultReplica, "dfs.default.replica", 3, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+          &defaultReplica, "dfs.default.replica", 3, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &inputConnTimeout, "input.connect.timeout", 600 * 1000
+            &inputConnTimeout, "input.connect.timeout", 600 * 1000, ORIG
         }, {
-            &inputReadTimeout, "input.read.timeout", 3600 * 1000
+            &inputReadTimeout, "input.read.timeout", 3600 * 1000, ORIG
         }, {
-            &inputWriteTimeout, "input.write.timeout", 3600 * 1000
+            &inputWriteTimeout, "input.write.timeout", 3600 * 1000, ORIG
         }, {
-            &localReadBufferSize, "input.localread.default.buffersize", 1 * 1024 * 1024, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &localReadBufferSize, "input.localread.default.buffersize", 1 * 1024 * 1024, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &prefetchSize, "dfs.prefetchsize", 10, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &prefetchSize, "dfs.prefetchsize", 10, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &maxGetBlockInfoRetry, "input.read.getblockinfo.retry", 3, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &maxGetBlockInfoRetry, "input.read.getblockinfo.retry", 3, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &maxLocalBlockInfoCacheSize, "input.localread.blockinfo.cachesize", 1000, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &maxLocalBlockInfoCacheSize, "input.localread.blockinfo.cachesize", 1000, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &maxReadBlockRetry, "input.read.max.retry", 60, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &maxReadBlockRetry, "input.read.max.retry", 60, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &chunkSize, "output.default.chunksize", 512, bind(CheckMultipleOf<int32_t>, _1, _2, 512)
+            &chunkSize, "output.default.chunksize", 512, ORIG, bind(CheckMultipleOf<int32_t>, _1, _2, 512)
         }, {
-            &packetSize, "output.default.packetsize", 64 * 1024
+            &packetSize, "output.default.packetsize", 64 * 1024, ORIG
         }, {
-            &blockWriteRetry, "output.default.write.retry", 10, bind(CheckRangeGE<int32_t>, _1, _2, 1)
+            &blockWriteRetry, "output.default.write.retry", 10, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 1)
         }, {
-            &outputConnTimeout, "output.connect.timeout", 600 * 1000
+            &outputConnTimeout, "output.connect.timeout", 600 * 1000, ORIG
         }, {
-            &outputReadTimeout, "output.read.timeout", 3600 * 1000
+            &outputReadTimeout, "output.read.timeout", 3600 * 1000, ORIG
         }, {
-            &outputWriteTimeout, "output.write.timeout", 3600 * 1000
+            &outputWriteTimeout, "output.write.timeout", 3600 * 1000, ORIG
         }, {
-            &closeFileTimeout, "output.close.timeout", 3600 * 1000
+            &closeFileTimeout, "output.close.timeout", 3600 * 1000, ORIG
         }, {
-            &packetPoolSize, "output.packetpool.size", 1024
+            &packetPoolSize, "output.packetpool.size", 1024, ORIG
         }, {
-            &heartBeatInterval, "output.heeartbeat.interval", 10 * 1000
+            &heartBeatInterval, "output.heeartbeat.interval", 10 * 1000, ORIG
         }, {
-            &rpcMaxHARetry, "dfs.client.failover.max.attempts", 15, bind(CheckRangeGE<int32_t>, _1, _2, 0)
+            &rpcMaxHARetry, "dfs.client.failover.max.attempts", 15, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 0)
         }, {
-            &maxFileDescriptorCacheSize, "dfs.client.read.shortcircuit.streams.cache.size", 256, bind(CheckRangeGE<int32_t>, _1, _2, 0)
+          &maxFileDescriptorCacheSize, "dfs.client.read.shortcircuit.streams.cache.size", 256, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 0)
         }, {
-            &socketCacheExpiry, "dfs.client.socketcache.expiryMsec", 3000, bind(CheckRangeGE<int32_t>, _1, _2, 0)
+            &socketCacheExpiry, "dfs.client.socketcache.expiryMsec", 3000, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 0)
         }, {
-            &socketCacheCapacity, "dfs.client.socketcache.capacity", 16, bind(CheckRangeGE<int32_t>, _1, _2, 0)
+            &socketCacheCapacity, "dfs.client.socketcache.capacity", 16, ORIG, bind(CheckRangeGE<int32_t>, _1, _2, 0)
         }
     };
     ConfigDefault<int64_t> i64Values [] = {
         {
-            &defaultBlockSize, "dfs.default.blocksize", 64 * 1024 * 1024, bind(CheckMultipleOf<int64_t>, _1, _2, 512)
+            &defaultBlockSize, "dfs.default.blocksize", 64 * 1024 * 1024, ORIG, bind(CheckMultipleOf<int64_t>, _1, _2, 512)
         }
     };
     ConfigDefault<std::string> strValues [] = {
-        {&defaultUri, "dfs.default.uri", "hdfs://localhost:9000" },
-        {&defaultFS, "fs.defaultFS", "hdfs://localhost:8020" },
-        {&defaultName, "fs.default.name", "hdfs://localhost:8020" },
-        {&rpcAuthMethod, "hadoop.security.authentication", "simple" },
-        {&kerberosCachePath, "hadoop.security.kerberos.ticket.cache.path", "" },
-        {&logSeverity, "dfs.client.log.severity", "INFO" },
-        {&domainSocketPath, "dfs.domain.socket.path", ""}
+        // fs.defaultFS has two aliases, it must come first so that
+        // the default value will get set if it is not found and the
+        // aliases can skip setting the default.
+        {&defaultFS, "fs.defaultFS", "hdfs://localhost:9000", ORIG },
+        {&defaultFS, "dfs.default.uri", "hdfs://localhost:9000", ALIAS },  // fs.defaultFS
+        {&defaultFS, "fs.default.name", "hdfs://localhost:9000", ALIAS }, // fs.defaultFS
+        {&rpcAuthMethod, "hadoop.security.authentication", "simple", ORIG },
+        {&kerberosCachePath, "hadoop.security.kerberos.ticket.cache.path", "", ORIG },
+        {&logSeverity, "dfs.client.log.severity", "INFO", ORIG },
+        {&domainSocketPath, "dfs.domain.socket.path", "", ORIG}
     };
 
     for (size_t i = 0; i < ARRAYSIZE(boolValues); ++i) {
-        *boolValues[i].variable = conf.getBool(boolValues[i].key,
-                                               boolValues[i].value);
+        if (!boolValues[i].alias) {
+            *boolValues[i].variable = conf.getBool(boolValues[i].key,
+                                                   boolValues[i].value);
+        } else {
+            // For aliases, assume that the default value has already been
+            // picked up and is correct.  If a non-default value is given,
+            // take that one.
+            try {
+                *boolValues[i].variable = conf.getBool(boolValues[i].key);
+            } catch (const HdfsConfigNotFound & e) {
+                continue;
+            }
+        }
 
         if (boolValues[i].check) {
             boolValues[i].check(boolValues[i].key, *boolValues[i].variable);
@@ -159,8 +176,19 @@ SessionConfig::SessionConfig(const Config & conf) {
     }
 
     for (size_t i = 0; i < ARRAYSIZE(i32Values); ++i) {
-        *i32Values[i].variable = conf.getInt32(i32Values[i].key,
-                                               i32Values[i].value);
+        if (!i32Values[i].alias) {
+            *i32Values[i].variable = conf.getInt32(i32Values[i].key,
+                                                   i32Values[i].value);
+        } else {
+            // For aliases, assume that the default value has already been
+            // picked up and is correct.  If a non-default value is given,
+            // take that one.
+            try {
+                *i32Values[i].variable = conf.getInt32(i32Values[i].key);
+            } catch (const HdfsConfigNotFound & e) {
+                continue;
+            }
+        }
 
         if (i32Values[i].check) {
             i32Values[i].check(i32Values[i].key, *i32Values[i].variable);
@@ -168,8 +196,19 @@ SessionConfig::SessionConfig(const Config & conf) {
     }
 
     for (size_t i = 0; i < ARRAYSIZE(i64Values); ++i) {
-        *i64Values[i].variable = conf.getInt64(i64Values[i].key,
-                                               i64Values[i].value);
+        if (!i64Values[i].alias) {
+            *i64Values[i].variable = conf.getInt64(i64Values[i].key,
+                                                   i64Values[i].value);
+        } else {
+            // For aliases, assume that the default value has already been
+            // picked up and is correct.  If a non-default value is given,
+            // take that one.
+            try {
+                *i64Values[i].variable = conf.getInt64(i64Values[i].key);
+            } catch (const HdfsConfigNotFound & e) {
+                continue;
+            }
+        }
 
         if (i64Values[i].check) {
             i64Values[i].check(i64Values[i].key, *i64Values[i].variable);
@@ -177,8 +216,19 @@ SessionConfig::SessionConfig(const Config & conf) {
     }
 
     for (size_t i = 0; i < ARRAYSIZE(strValues); ++i) {
-        *strValues[i].variable = conf.getString(strValues[i].key,
-                                                strValues[i].value);
+        if (!strValues[i].alias) {
+            *strValues[i].variable = conf.getString(strValues[i].key,
+                                                    strValues[i].value);
+        } else {
+            // For aliases, assume that the default value has already been
+            // picked up and is correct.  If a non-default value is given,
+            // take that one.
+            try {
+                *strValues[i].variable = conf.getString(strValues[i].key);
+            } catch (const HdfsConfigNotFound & e) {
+                continue;
+            }
+        }
 
         if (strValues[i].check) {
             strValues[i].check(strValues[i].key, *strValues[i].variable);
